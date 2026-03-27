@@ -9,6 +9,7 @@ import {
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import { useEffect } from 'react'
 
 const CustomMultiSelectAutoComplete = ({
 	options = [],
@@ -23,33 +24,57 @@ const CustomMultiSelectAutoComplete = ({
 	name,
 	onBlur,
 }) => {
-	const isObjectArray = typeof options[0] === 'object' && options[0] !== null
+	// ✅ Safe check
+	const isObjectArray =
+		Array.isArray(options) &&
+		options.length > 0 &&
+		typeof options[0] === 'object'
 
-	const getOptionLabel = (option) =>
-		isObjectArray ? (option.label ?? '') : option
+	// ✅ Safe label
+	const getOptionLabel = (option) => {
+		if (!option) return ''
+		return isObjectArray ? option.label ?? option.name ?? '' : option
+	}
 
-	const isOptionEqualToValue = (option, val) =>
-		isObjectArray ? option.id === val?.id : option === val
+	// ✅ Safe compare (fix warning)
+	const isOptionEqualToValue = (option, val) => {
+		if (!option || !val) return false
+		return isObjectArray ? option.id === val.id : option === val
+	}
 
+	// ✅ Handle change
 	const handleChange = (_, selected) => {
 		if (isObjectArray) {
-			onChange(selected.map((item) => item.id))
+			onChange(selected?.map((item) => item.id) || [])
 		} else {
-			onChange(selected)
+			onChange(selected || [])
 		}
 	}
 
+	// ✅ Resolve value safely
 	const resolvedValue = isObjectArray
 		? options.filter((opt) => value?.includes(opt.id))
-		: value
+		: value || []
+
+	// ✅ Auto clean invalid ids (IMPORTANT for API data)
+	useEffect(() => {
+		if (isObjectArray && options.length && value?.length) {
+			const validIds = options.map((opt) => opt.id)
+			const filtered = value.filter((id) => validIds.includes(id))
+
+			if (filtered.length !== value.length) {
+				onChange(filtered)
+			}
+		}
+	}, [options])
 
 	return (
 		<Autocomplete
 			multiple
 			disableCloseOnSelect
 			disableClearable
-			options={options}
-			value={resolvedValue}
+			options={options || []}
+			value={resolvedValue || []}
 			onChange={handleChange}
 			getOptionLabel={getOptionLabel}
 			isOptionEqualToValue={isOptionEqualToValue}
@@ -63,7 +88,7 @@ const CustomMultiSelectAutoComplete = ({
 					size='small'
 					sx={{
 						bgcolor: 'transparent',
-						transition: 'background-color 0.5s ease',
+						transition: '0.3s',
 						'&:hover': {
 							bgcolor: 'globalElementColors.grey5',
 						},
@@ -74,33 +99,25 @@ const CustomMultiSelectAutoComplete = ({
 			}
 			sx={sx}
 			renderOption={(props, option, { selected }) => (
-				<Box sx={{ my: '5px', px: '5px' }}>
-					<li {...props}>
-						<Checkbox
-							icon={<CheckBoxOutlineBlankIcon fontSize='small' />}
-							checkedIcon={<CheckBoxIcon fontSize='small' />}
-							style={{ marginRight: 8 }}
-							checked={selected}
-						/>
-						{getOptionLabel(option)}
-					</li>
-				</Box>
+				<li {...props}>
+					<Checkbox
+						icon={<CheckBoxOutlineBlankIcon fontSize='small' />}
+						checkedIcon={<CheckBoxIcon fontSize='small' />}
+						style={{ marginRight: 8 }}
+						checked={selected}
+					/>
+					{getOptionLabel(option)}
+				</li>
 			)}
-			slotProps={{
-				paper: {
-					// sx: {
-					// 	maxHeight: '200px',
-					// 	overflowY: 'hidden',
-					// },
-				},
-			}}
 			renderTags={(selected, getTagProps) =>
 				selected.map((option, index) => {
+					const optionId = isObjectArray ? option.id : option
+
 					const handleDelete = () => {
-						const optionId = isObjectArray ? option.id : option
 						const updated = isObjectArray
 							? value.filter((id) => id !== optionId)
 							: value.filter((val) => val !== optionId)
+
 						onChange(updated)
 					}
 
@@ -109,6 +126,7 @@ const CustomMultiSelectAutoComplete = ({
 							variant='outlined'
 							label={getOptionLabel(option)}
 							{...getTagProps({ index })}
+							onDelete={handleDelete}
 							sx={{
 								bgcolor: 'globalElementColors.lightBlue',
 								color: 'globalElementColors.black',
@@ -116,7 +134,6 @@ const CustomMultiSelectAutoComplete = ({
 								borderRadius: '2px',
 								border: 'none',
 							}}
-							onDelete={handleDelete}
 						/>
 					)
 				})
@@ -124,25 +141,11 @@ const CustomMultiSelectAutoComplete = ({
 			renderInput={(params) => (
 				<TextField
 					{...params}
-					// label={placeholder}
-					variant='outlined'
 					placeholder={placeholder}
 					error={error}
 					sx={{
-						'& .MuiInputLabel-root': {
-							fontWeight: 500, // <-- Increase thickness here
-							fontSize: '14px',
-							color: '#000', // optional
-						},
-						'& .MuiInputLabel-shrink': {
-							fontWeight: 500, // when label floats
-						},
 						'& .MuiInputBase-root': {
-							height: 'auto',
 							borderRadius: '3px',
-							borderColor: error
-								? 'globalElementColors.red'
-								: 'globalElementColors.grey3',
 							...fieldSx,
 						},
 						'& .MuiOutlinedInput-root': {
@@ -158,17 +161,10 @@ const CustomMultiSelectAutoComplete = ({
 									: 'globalElementColors.grey',
 							},
 							'&.Mui-focused fieldset': {
-								border: '1px solid',
 								borderColor: error
 									? 'globalElementColors.red'
 									: 'globalElementColors.grey',
 							},
-						},
-						'& .MuiAutocomplete-popupIndicator': {
-							color: 'globalElementColors.grey3',
-						},
-						'& .MuiAutocomplete-clearIndicator': {
-							color: 'globalElementColors.grey3',
 						},
 						'& .MuiInputBase-input::placeholder': {
 							fontSize: '14px',

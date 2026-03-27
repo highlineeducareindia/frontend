@@ -1,5 +1,6 @@
 import { Autocomplete, TextField } from '@mui/material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import { useEffect } from 'react'
 
 const CustomAutocompleteNew = ({
 	options = [],
@@ -14,22 +15,33 @@ const CustomAutocompleteNew = ({
 	error = false,
 	onClick,
 }) => {
-	const isObjectArray = typeof options[0] === 'object' && options[0] !== null
+	// check if options are objects
+	const isObjectArray =
+		Array.isArray(options) &&
+		options.length > 0 &&
+		typeof options[0] === 'object'
 
-	const getOptionLabel = (option) =>
-		isObjectArray ? (option.label ?? '') : option
+	// ✅ Safe label getter
+	const getOptionLabel = (option) => {
+		if (!option) return ''
+		if (isObjectArray) return option.label ?? option.name ?? ''
+		return option ?? ''
+	}
 
+	// ✅ Safe comparison (fixes MUI warning)
 	const isOptionEqualToValue = (option, val) => {
-		if (isObjectArray) return option.id === val?.id
+		if (!option || !val) return false
+		if (isObjectArray) return option.id === val.id
 		return option === val
 	}
 
+	// ✅ Handle change (returns id for object, value for string)
 	const handleChange = (_, selected) => {
 		if (multiple) {
 			if (isObjectArray) {
-				onChange(selected.map((item) => item.id))
+				onChange(selected?.map((item) => item.id) || [])
 			} else {
-				onChange(selected)
+				onChange(selected || [])
 			}
 		} else {
 			if (isObjectArray) {
@@ -40,19 +52,30 @@ const CustomAutocompleteNew = ({
 		}
 	}
 
+	// ✅ Resolve value safely
 	const resolvedValue = multiple
 		? isObjectArray
 			? options.filter((opt) => value?.includes(opt.id))
-			: value
+			: value || []
 		: isObjectArray
-			? (options.find((opt) => opt.id === value) ?? null)
-			: (value ?? null)
+			? options.find((opt) => opt.id === value) || null
+			: value || null
+
+	// ✅ Auto reset if value not found in options (important for API data)
+	useEffect(() => {
+		if (!multiple && isObjectArray && value && options.length) {
+			const match = options.find((opt) => opt.id === value)
+			if (!match) {
+				onChange(null)
+			}
+		}
+	}, [options])
 
 	return (
 		<Autocomplete
-			sx={sx} // SX is for overall Autocomplete and fieldSx is for Text field of autocomplete. All changes in fieldSx will reflect in text field
-			options={options}
-			value={resolvedValue}
+			sx={sx}
+			options={options || []}
+			value={resolvedValue || (multiple ? [] : null)}
 			onChange={handleChange}
 			multiple={multiple}
 			disabled={disabled}
@@ -62,6 +85,10 @@ const CustomAutocompleteNew = ({
 			popupIcon={<KeyboardArrowDownIcon />}
 			renderInput={(params) => (
 				<TextField
+					{...params}
+					label={label}
+					placeholder={placeholder}
+					error={error}
 					sx={{
 						'& .MuiInputBase-root': {
 							height: '44px',
@@ -69,7 +96,6 @@ const CustomAutocompleteNew = ({
 							borderColor: error
 								? 'globalElementColors.red'
 								: 'globalElementColors.grey3',
-
 							...fieldSx,
 						},
 						'& .MuiOutlinedInput-root': {
@@ -105,9 +131,6 @@ const CustomAutocompleteNew = ({
 							color: 'globalElementColors.black',
 						},
 					}}
-					{...params}
-					label={label}
-					placeholder={placeholder}
 				/>
 			)}
 		/>

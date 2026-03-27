@@ -98,19 +98,22 @@ const Profile = ({ user }) => {
 				role = localizationConstants.superAdminn
 				break
 			case userRoles.peeguCounselor:
-				role = localizationConstants.mypeeguCounsellor
+				// role = localizationConstants.mypeeguCounsellor
+				role = "MyPeegu Experts"
 				break
 			case userRoles.scCounselor:
-				role = localizationConstants.schoolCounsellorr
+				// role = localizationConstants.schoolCounsellorr
+				role = "School Counsellor"
 				break
 			case userRoles.sseCounselor:
-				role = 'SSE'
+				role = 'School Special Educator'
 				break
 			case userRoles.teacher:
 				role = localizationConstants.teacher
 				break
 			case userRoles.scPrincipal:
-				role = localizationConstants.pricipal
+				// role = localizationConstants.pricipal
+				role = "Senior Leadership Team"
 				break
 			default:
 				role = undefined // or some fallback like localizationConstants.unknown

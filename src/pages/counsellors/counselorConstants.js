@@ -116,19 +116,19 @@ export const sortkeys = [
 
 export const counselorTypeOptions = [
 	{
-		label: localizationConstants.myPeegu,
+		label: 'MyPeegu Experts',
 		id: userRoles.peeguCounselor,
 	},
 	{
-		label: localizationConstants.school,
+		label: 'School Counsellor',
 		id: userRoles.scCounselor,
 	},
 	{
-		label: 'SSE',
+		label: 'School Special Educator',
 		id: userRoles.sseCounselor,
 	},
 	{
-		label: localizationConstants.pricipal,
+		label: 'Senior Leadership Team',
 		id: userRoles.scPrincipal,
 	},
 ]
